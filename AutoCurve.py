@@ -1,40 +1,41 @@
 # -*- coding: utf-8 -*-
+from inspect import Attribute
 from itertools import combinations
-from functools import reduce
-from operator import sub
+from os import stat
 import matplotlib.pyplot as plt
 import random as rd
 import numpy as np
+from numba import njit
+from numba.typed import List
+#np.random.seed(11)
+#rd.seed(11)
+from numpy import random
 from numpy.testing._private.utils import check_free_memory
 np.seterr(all="ignore")
 import string
 import warnings
 import sympy as sp
 #warnings.simplefilter("error")
-import threading
-import multiprocessing
-import random as rd
 import numbers
-
-import tkinter as tk
-from time import sleep
 import cmath as math
 
 import math as math_regular
-from numpy.core.defchararray import find
-
-from numpy.lib.arraysetops import isin
-from numpy.lib.type_check import iscomplex
 
 class NumberWithText:
-    def __init__(self, num, text=None):
+    def __init__(self, num, text=None,opr = 0):
+        self.opr_count = opr
         self.num = num
         if text is None:
             self.text = f'{num}'
         else:
             self.text = text
+    
+    @property
+    def get_opr_plus(self):
+        return self.opr_count+1
 
     def __repe__(self):
+        #self.inc_opr()
         return f'{self.text}'
 
     def __str__(self):
@@ -45,28 +46,28 @@ class NumberWithText:
             num = self.num + b.num
         except:
             num = np.nan
-        return NumberWithText(num, f'({self.text}+{b.text})')
+        return NumberWithText(num, f'({self.text}+{b.text})',opr = self.get_opr_plus)
 
     def __mul__(self, b):
         try:
             num = self.num * b.num
         except:
             num = np.nan
-        return NumberWithText(num, f'({self.text}*{b.text})')
+        return NumberWithText(num, f'({self.text}*{b.text})',opr = self.get_opr_plus)
 
     def __sub__(self, b):
         try:
             num = self.num - b.num
         except:
             num = np.nan
-        return NumberWithText(num, f'({self.text}-{b.text})')
+        return NumberWithText(num, f'({self.text}-{b.text})',opr = self.get_opr_plus)
 
     def __truediv__(self, b):
         try:
             num = self.num/b.num
         except ZeroDivisionError:
             num = np.nan
-        return NumberWithText(num, f'({self.text}/{b.text})')
+        return NumberWithText(num, f'({self.text}/{b.text})',opr = self.get_opr_plus)
 
     def __pow__(self, b):
         try:
@@ -75,52 +76,52 @@ class NumberWithText:
             #num = self.num**b.num
             num = np.nan
 
-        return NumberWithText(num, f'({self.text}**{b.text})')
+        return NumberWithText(num, f'({self.text}**{b.text})',opr = self.get_opr_plus)
     
     def abs(self):
         try:
             num = np.abs(self.num)
         except:
             num = np.nan
-        return NumberWithText(num, f'(abs({self.text}))')
+        return NumberWithText(num, f'(abs({self.text}))',opr = self.get_opr_plus)
     
     def sin(self):
         try:
             num = np.sin(self.num)
         except:
             num = np.nan
-        return NumberWithText(num, f'(sin({self.text}))')
+        return NumberWithText(num, f'(sin({self.text}))',opr = self.get_opr_plus)
 
     def cos(self):
         try:
             num = np.cos(self.num)
         except:
             num = np.nan
-        return NumberWithText(num, f'(cos({self.text}))')
+        return NumberWithText(num, f'(cos({self.text}))',opr = self.get_opr_plus)
     
     def tan(self):
         try:
             num = np.tan(self.num)
         except:
             num = np.nan
-        return NumberWithText(num, f'(tan({self.text}))')
+        return NumberWithText(num, f'(tan({self.text}))',opr = self.get_opr_plus)
     
     def exp(self):
         try:
             num = np.exp(self.num)
         except:
             num = np.nan
-        return NumberWithText(num, f'(exp({self.text}))')
+        return NumberWithText(num, f'(exp({self.text}))',opr = self.get_opr_plus)
     
     def ln(self):
         try:
             num = np.log(self.num)
         except:
             num = np.nan
-        return NumberWithText(num, f'(log({self.text}))')
+        return NumberWithText(num, f'(log({self.text}))',opr = self.get_opr_plus)
 
     def factorial(self):
-        return NumberWithText(math_regular.factorial(self.num), f'({self.text}!)')
+        return NumberWithText(math_regular.factorial(self.num), f'({self.text}!)',opr = self.get_opr_plus)
 
     def sqrt(self):
         try:
@@ -128,7 +129,7 @@ class NumberWithText:
         except:
             print(self.num)
         
-        return NumberWithText(num, f'(sqrt({self.text}))')
+        return NumberWithText(num, f'(sqrt({self.text}))',opr = self.get_opr_plus)
 
 
 
@@ -165,7 +166,7 @@ def factorial(N):
     return N*factorial(N-NumberWithText(1))
 
 
-def anything_factorial_closet(quest, ans, g):
+def anything_factorial_closet(quest, ans, g,prob_of_use_x):
     sortv = []
     for i in quest:
         if isinstance(i.num,complex) or (i.num > 7 or i.num < 0 or not isinstance(i.num, numbers.Integral) or i.num == 1 or i.num == 2):
@@ -207,7 +208,7 @@ def generate_random_choice(length,k = rd.randint(1,11)):
     return prob
 
 
-def anything_plus_closet(quest, ans, g):
+def anything_plus_closet(quest, ans, g,prob_of_use_x):
     sortv = []
     for i in range(2, 3):
         combi = list(combinations(quest, i))
@@ -245,7 +246,7 @@ def anything_plus_closet(quest, ans, g):
     return [*(p[g].subset)], p[g].value
 
 
-def anything_mul_closet(quest, ans, g):
+def anything_mul_closet(quest, ans, g,prob_of_use_x):
     sortv = []
     for i in range(2, 3):
         combi = list(combinations(quest, i))
@@ -292,7 +293,7 @@ def special_exp(subset,OC = False):
     return ans
 
 
-def anything_exp_closet(quest, ans, g):
+def anything_exp_closet(quest, ans, g,prob_of_use_x):
     sortv = []
     for i in range(2, 3):
         combi = list(combinations(quest, i))
@@ -330,7 +331,7 @@ def anything_exp_closet(quest, ans, g):
         return None, None
     return [*(p[g].subset)], p[g].value
 
-def anything_sqrt_closet(quest, ans, g,OC = True):
+def anything_sqrt_closet(quest, ans, g,prob_of_use_x,OC = True):
     sortv = []
     for i in quest:
         if i.num == "x":
@@ -353,7 +354,7 @@ def anything_sqrt_closet(quest, ans, g,OC = True):
     return [p[g].subset], p[g].value
 
 def create_function_closet(function):
-    def anything_function_closet(quest, ans, g,OC = True):
+    def anything_function_closet(quest, ans, g,prob_of_use_x,OC = True):
         sortv = []
         for i in quest:
             if i.num == "x":
@@ -376,7 +377,7 @@ def create_function_closet(function):
         return [p[g].subset], p[g].value
     return anything_function_closet
 
-def anything_minus_closet(quest, ans, g, invoker = True):
+def anything_minus_closet(quest, ans, g,prob_of_use_x, invoker = True):
     sortv = []
     if invoker and rd.randint(0,100) > 70:
         pass
@@ -441,7 +442,7 @@ def locate_x(quest_list):
         if quest_list[i].num == "x":
             return i
 
-def anything_div_closet(quest, ans, g):
+def anything_div_closet(quest, ans, g,prob_of_use_x):
     sortv = []
     for i in range(2, 3):
         combi = list(combinations(quest, i))
@@ -481,24 +482,81 @@ def list_of_np_to_list_of_list(elements):
     target = elements.copy()
     return target
 
+class Function:
+    def __init__(self,eq):
+        self.eq_original = eq
+        self.eq = self.replace_system(eq)
+        self.variable_list = []
+        for i in self.eq:
+            if i in string.ascii_uppercase:
+                self.variable_list.append(i)
+        self.variable_list = set(self.variable_list)
+        #print(f'{self.eq}',self.variable_list)
+    @staticmethod
+    def replace_system(eq : str):
+        eq = Function.if_in_this_then_replace_by(eq,"sin","np.sin")
+        eq = Function.if_in_this_then_replace_by(eq,"cos","np.cos")
+        eq = Function.if_in_this_then_replace_by(eq,"tan","np.tan")
+        eq = Function.if_in_this_then_replace_by(eq,"sqrt","np.sqrt")
+        eq = Function.if_in_this_then_replace_by(eq,"abs","np.abs")
+        eq = Function.if_in_this_then_replace_by(eq,"log","np.log")
+        eq = Function.if_in_this_then_replace_by(eq,"exp","np.exp")
+        return eq
+
+    @staticmethod
+    def if_in_this_then_replace_by(text,element,by):
+        if element in text:
+            return text.replace(element,by)
+        return text
+
+    def eval_eq(self,data:dict):
+
+        if set(data.keys()) != self.variable_list:
+            raise ValueError
+        
+        phd = self.eq
+        for i in set(data.keys()):
+            phd = phd.replace(i,f'{data[i]}')
+            
+
+        return eval(phd)
+        
 class IQ180_Solution:
     def __init__(self):
         self.running = False
         super().__init__()
 
+    
     def clean_text(self,eq_cleaned):
         #print(self.init_quest)
         for i in range(len(self.init_quest)-1):
             element = str(self.init_quest[i])
             #print(element)
-            eq_cleaned = eq_cleaned.replace(element,string.ascii_uppercase[i])
+            eq_cleaned = eq_cleaned.replace(element,self.get_value_of_value(element))
         #print(eq_cleaned)
         #print(eq_cleaned)
         eq_cleaned = sp.parsing.sympy_parser.parse_expr(eq_cleaned)
         return eq_cleaned
+    
+    def get_value_of_value(self,replace):
+        return self.element_get_key[replace]
 
-    def set_start(self,quest, ans,not_use_all = False, sol_nums=1, allow_plus=True, allow_minus=True, allow_mul=True, allow_div=True, allow_exp=True, allow_fac=True, allow_sqrt = True,allow_sin = True,allow_cos = True ,allow_tan = True,allow_expo = True ,allow_ln = True,allow_abs = True):
-        self.quest = [NumberWithText(i) for i in quest]
+    def set_start(self,quest : dict, ans,not_use_all = False,prob_of_use_x = 90,keep_best_variable_params = 4,keep_factor = 50, sol_nums=1,reset_params = 300, allow_plus=True, allow_minus=True, allow_mul=True, allow_div=True, allow_exp=True, allow_fac=False, allow_sqrt = True,allow_sin = True,allow_cos = True ,allow_tan = True,allow_expo = True ,allow_ln = True,allow_abs = True):
+        self.quest = []
+        self.prob_of_use_x = 100 - prob_of_use_x
+        self.reset_param = reset_params
+        self.key_by_order = quest.copy()
+        self.element_get_key = {}
+        self.keep_best_variable_params = keep_best_variable_params
+        self.keep_factor = keep_factor
+
+        for i in self.key_by_order.keys():
+            self.element_get_key[str(self.key_by_order[i])] = i
+
+        for i in quest.keys():
+            self.quest.append(NumberWithText(quest[i]))
+        #self.quest = [NumberWithText(i) for i in quest]
+        self.quest.append(NumberWithText("x"))
         self.init_quest = self.quest.copy()
         self.ans = NumberWithText(ans)
         allow_arg = [allow_plus, allow_minus,
@@ -537,90 +595,71 @@ class IQ180_Solution:
 
         return False
 
-
-    def run_a_solution(self):
+    @njit
+    def run_a_solution(self,accept_error=10e-5):
         shortest = math.inf
-        
+        rework = 0
+        best_variable = []
         while True:
+            #self.packing = [self.init_quest.copy()]
             go_out = False
-            self.packing = [self.init_quest.copy()]
-            
+            #rework = 0
             for quest in self.packing:
-                rd.shuffle(quest)
-                #print(quest)
-                ms = rd.sample(self.methods, len(self.methods))
-
+                rework += 1
+                ms = [rd.sample(self.methods, len(self.methods))[0]]
                 for m in ms:
-                    #res = m(quest, self.ans, 0)
-                    #print(res)
-                    #print()
-                    used, equal_to = m(quest, self.ans, 0)
-                    #print(equal_to.num)
+                    used, equal_to = m(quest, self.ans, 0,self.prob_of_use_x)
                     self.wpe += 1
-                    #print(self.wpe,equal_to.num)
                     try:
                         if used is None or np.isnan(equal_to.num).any():
                             continue
                     except:
                         continue
-                    #print(self.wpe)
-                    #remain = list(set(quest))
-                    long_time = find_dist(equal_to.num,self.ans.num)
-                    if self.wpe >= 1000000:
-                        self.wpe = 0
-                        go_out = True
-                        break
-                    #print(equal_to.num)
-                    #print(long_time)
+                    MSE = find_dist(equal_to.num,self.ans.num)/self.ans.num.shape[0]
+                    if MSE > shortest * self.keep_factor:
+                        continue
                     rd.shuffle(self.packing)
-                    if long_time < shortest and isinstance(equal_to.num,np.ndarray):
-                        shortest = long_time
+                    #print(MSE,self.wpe,rework,len(self.packing))
+                    if MSE < shortest and isinstance(equal_to.num,np.ndarray):
+                        shortest = MSE
                         #print(shortest)
-                        plt.title(f'error : {long_time/self.ans.num.shape[0]}\n{self.clean_text(equal_to.text)}')
-                        plt.plot(x,self.ans.num,"r")
-                        plt.plot(x,equal_to.num,"b")
+                        #plt.title(f'error : {MSE}\n{self.clean_text(equal_to.text)}')
+                        #plt.plot(x,self.ans.num,"or")
+                        #plt.plot(x,equal_to.num,"b")
                         #plt.show()
-                        plt.pause(0.5)
-                        plt.clf()
+                        #plt.pause(0.5)
+                        best_variable.append([equal_to,*self.init_quest])
+                        #plt.clf()
                         #display.clear_output(wait=True)
-                        print(self.clean_text(equal_to.text),long_time/self.ans.num.shape[0])
+                        print(MSE)
                         #print(shortest)
-                    if math.isclose(find_dist(equal_to.num,self.ans.num),0): #and (self.not_use_all or len(remain) == 0):
+                    if (MSE<accept_error): #and (self.not_use_all or len(remain) == 0):
                         if equal_to.text not in self.worked_text:
                             eq_cleaned = self.clean_text(equal_to.text)
-                            
-                            #self.worked_text.append(equal_to.text)
                             self.worked_text.append(eq_cleaned)
-                            #print(sp.parsing.sympy_parser.parse_expr(eq_cleaned))
-                            #print(equal_to.text)
                             self.worked.append(equal_to)
-                        if self.sol_nums == len(self.worked_text):
-                            plt.title(f'error : {long_time/self.ans.num.shape[0]}\n{self.clean_text(equal_to.text)}')
-                            plt.plot(x,self.ans.num,"r")
-                            plt.plot(x,equal_to.num,"b")
-                            #plt.show()
-                            plt.pause(100)
-                            plt.clf()
-                            #sleep(100)
-                            #return
+                            self.solution = Function(str(eq_cleaned))
+                            
+                            print(str(eq_cleaned))
+                            return self.solution
+
                     elif np.isnan(equal_to.num).any() is not True and isinstance(equal_to,NumberWithText):
                         new_pack = [equal_to,*self.init_quest]
-                        #if new_pack not in self.packing:
-                            #self.packing.append(new_pack)
-                        #if not self.check_if_in_packing(new_pack):
-                        #self.packing.append(new_pack)
-                        if equal_to.num.tolist() not in self.all_solution_equation:
+                        if True:
                             self.packing.append(new_pack)
                             self.all_solution_equation.append(equal_to.num.tolist())
-                        #print(equal_to.num)
-                    else:
-                        pass
-                        #self.packing.append(quest)
+                            #print(MSE,len(self.packing),equal_to.opr_count)
+                    rd.shuffle(self.packing)
+                    #print(MSE,self.wpe,rework)
+                    if len(self.packing) > self.reset_param:
+                        best_variable = best_variable[-int(len(self.packing)/self.keep_best_variable_params):]
+                        self.packing = [self.init_quest,*best_variable]
+                        #go_out = True
+                        #break
+                    #print(len(lt_long))
                 if go_out:
                     break
-                    #print(len(self.packing))
-                #print(len(self.packing),self.wpe)
-        #plt.show()
+
 def find_dist(a,b):
     try:
         dis = np.sum(np.abs(a-b))
@@ -629,23 +668,18 @@ def find_dist(a,b):
         return np.inf
     return dis
 
-prob_of_use_x = 80
-prob_of_use_x = 100 - prob_of_use_x
-#ele = [np.array([1,2,3,4],dtype=np.complex),np.array([1,3,5,2],dtype=np.complex),"x"]
-x = np.linspace(-1,1,1000)
-ele = [x,"x"]
-#ans = np.array([1,4,9,16])
-ans = np.sin(x*3)
+#prob_of_use_x = 90
+#prob_of_use_x = 100 - prob_of_use_x
+v = np.linspace(0,10,100)
+m = np.linspace(1,10,100)
+ele = {"M":m,"V":v}
+ans = m * (v ** 2) * 0.5
 
-#print(ans)
-
-#for i in range(2,3):
-#print(i)
 
 tool = IQ180_Solution()
-tool.set_start(ele,ans,sol_nums=1,not_use_all=False,allow_fac=False)
-tool.run_a_solution()
-print(tool.worked_text)
+tool.set_start(ele,ans,sol_nums=1,not_use_all=False,allow_fac=False,reset_params=300,prob_of_use_x= 90)
+a = tool.run_a_solution(accept_error=0.00003)
 
 
-#print(str(ans).replace(" ","",1))
+print(a.eval_eq({"M":5,"V":2}))
+#print(tool.worked_text)
